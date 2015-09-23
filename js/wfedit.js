@@ -10,8 +10,17 @@ function wfeditApp () {
 		this.height = 50;
 		this.width = 30;
 		this.color = "#ff00ee";
-	};
 
+		this.contains = function (x, y) {
+			if ((this.x) <= x && (this.x + this.width) >= x &&
+				(this.y) <= y && (this.y + this.height) >= y) {
+				return true;
+			} else {
+				return false;
+			}
+		};
+	};
+	
 	function initApp () {
 		// resize and reposition canvas
 		resizeCanvas();
@@ -27,6 +36,15 @@ function wfeditApp () {
 			drawScreen();
 		});
 
+		c.addEventListener('mousedown', function (e) {
+			var clicked = findRect (e.clientX, e.clientY);
+			if (clicked >= 0) {
+				raiseRect (clicked);
+			}
+			//floatRect (clicked);
+			drawScreen();
+		});
+
 		drawScreen();
 	}
 
@@ -39,11 +57,26 @@ function wfeditApp () {
 	function createRect (x, y) {
 		var rect = new Rect(x, y);
 		rects.push(rect);
-		console.log(rects);
+	}
+
+	function findRect (x, y) {
+		// this selects the highest rectangle in the stack
+		// that's under the mouse, because the order of the array matters
+		for (var i = rects.length -1; i >= 0; i--) {
+			if (rects[i].contains(x,y) == true) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	function raiseRect (rectIndex) {
+		var rect = rects.splice(rectIndex, 1);
+		rects.push(rect[0]);
+
 	}
 
 	function drawScreen () {
-		console.log ("drawing screen");
 		ctx.fillStyle = "#ffffee";
 		ctx.fillRect (0, 0, c.width, c.height);
 
@@ -53,13 +86,15 @@ function wfeditApp () {
 		rects.forEach(function (rectItem) {
 			drawRect(rectItem.x - c.offsetLeft, 
 				     rectItem.y - c.offsetTop,
-				     rectItem.height,
 				     rectItem.width,
+				     rectItem.height,
 				     rectItem.color);
 		});
 	}
 
 	function drawRect (x, y, dx, dy, color) {
+		ctx.fillStyle = "#ffffff";
+		ctx.fillRect (x, y, dx, dy);
 		ctx.strokeStyle = color;
 		ctx.strokeRect (x, y, dx, dy);
 	}
