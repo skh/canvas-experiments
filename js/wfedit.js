@@ -3,6 +3,7 @@ function wfeditApp () {
 	var ctx = c.getContext('2d');
 
 	var rects = [];
+	var dragStart = { x: 0, y: 0 };
 
 	var Rect = function (x, y) {
 		this.x = x;
@@ -10,6 +11,9 @@ function wfeditApp () {
 		this.height = 50;
 		this.width = 30;
 		this.color = "#ff00ee";
+		this.highlight = "#000000";
+		this.selected = false;
+		
 
 		this.contains = function (x, y) {
 			if ((this.x) <= x && (this.x + this.width) >= x &&
@@ -39,11 +43,37 @@ function wfeditApp () {
 		c.addEventListener('mousedown', function (e) {
 			var clicked = findRect (e.clientX, e.clientY);
 			if (clicked >= 0) {
+				toggleSelectRect (clicked);
 				raiseRect (clicked);
-			}
-			//floatRect (clicked);
+				startDrag(e.clientX, e.clientY);
+			}	
 			drawScreen();
 		});
+
+		c.addEventListener('mouseup', function () {
+			if (rects.length > 0) {
+				rects[rects.length - 1].selected = false;
+			}
+			/*rects.forEach(function (rectItem) {
+				rectItem.selected = false;
+			});*/
+			drawScreen();
+		});
+
+		c.addEventListener('mousemove', function (e) {
+			if (rects.length > 0) {
+				var activeRect = rects[rects.length - 1];
+				if (activeRect.selected) {
+					var dx = e.clientX - dragStart.x
+					var dy = e.clientY - dragStart.y;
+					activeRect.x += dx;
+					activeRect.y += dy;
+					startDrag(e.clientX, e.clientY);
+					drawScreen();
+				}
+			}
+		});
+
 
 		drawScreen();
 	}
@@ -73,10 +103,19 @@ function wfeditApp () {
 	function raiseRect (rectIndex) {
 		var rect = rects.splice(rectIndex, 1);
 		rects.push(rect[0]);
-
 	}
 
+	function toggleSelectRect (rectIndex) {
+		rects[rectIndex].selected = !rects[rectIndex].selected;		
+	}
+
+	function startDrag (x, y) {
+		dragStart.x = x;
+		dragStart.y = y;
+	} 
+
 	function drawScreen () {
+		var color = "#000000";
 		ctx.fillStyle = "#ffffee";
 		ctx.fillRect (0, 0, c.width, c.height);
 
@@ -84,11 +123,16 @@ function wfeditApp () {
 		ctx.strokeRect (0, 0, c.width, c.height);
 
 		rects.forEach(function (rectItem) {
+			if (rectItem.selected) {
+				color = rectItem.highlight;
+			} else {
+				color = rectItem.color;
+			}
 			drawRect(rectItem.x - c.offsetLeft, 
 				     rectItem.y - c.offsetTop,
 				     rectItem.width,
 				     rectItem.height,
-				     rectItem.color);
+				     color);
 		});
 	}
 
