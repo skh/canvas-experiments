@@ -56,9 +56,6 @@ function wfeditApp () {
 			if (rects.length > 0) {
 				rects[rects.length - 1].selected = false;
 			}
-			/*rects.forEach(function (rectItem) {
-				rectItem.selected = false;
-			});*/
 			drawScreen();
 		});
 
@@ -68,9 +65,11 @@ function wfeditApp () {
 				if (activeRect.selected) {
 					var dx = e.clientX - dragStart.x
 					var dy = e.clientY - dragStart.y;
+					
 					activeRect.x += dx;
-					activeRect.y += dy;
-					startDrag(e.clientX, e.clientY);
+					activeRect.y += dy;	
+					startDrag(e.clientX, e.clientY);					
+					
 					drawScreen();
 				}
 			}
@@ -82,8 +81,8 @@ function wfeditApp () {
 
 	function resizeCanvas () {		
 		// top left is hardcoded to (10,10) in index.html
-		c.height = window.innerHeight - 20;
-		c.width = window.innerWidth - 20;
+		c.height = window.innerHeight - 200;
+		c.width = window.innerWidth - 200;
 		ctx.translate(0.5, 0.5); // fix blurring
 	}
 
@@ -118,14 +117,12 @@ function wfeditApp () {
 	} 
 
 	function drawScreen () {
+
+		drawBackground (0, 0, c.width, c.height);
+
 		var color = "#000000";
 		var alpha = 1;
-		ctx.fillStyle = "#ffffee";
-		ctx.fillRect (0, 0, c.width, c.height);
-
-	  ctx.lineWidth = 2;
-		ctx.strokeStyle = "rgb(0, 0, 255)";
-		ctx.strokeRect (0, 0, c.width, c.height);
+		var radius = 8;
 
 		rects.forEach(function (rectItem) {
 			if (rectItem.selected) {
@@ -138,17 +135,61 @@ function wfeditApp () {
 				     rectItem.y - c.offsetTop,
 				     rectItem.width,
 				     rectItem.height,
-				     color, alpha);
+				     color, alpha,
+				     radius);
 		});
 	}
 
-	function drawRect (x, y, dx, dy, color, alpha) {
+	function drawGrid (x, y, dx, dy, spacing) {
+		
+
+	}
+
+	function drawBackground (x, y, dx, dy) {
+		ctx.fillStyle = "#ffffee";
+		ctx.fillRect (x, y, dx, dy);
+	  	ctx.lineWidth = 2;
+		ctx.strokeStyle = "rgb(255, 0, 0)";
+		ctx.strokeRect (x + 1, y + 1, dx - 3, dy - 3);
+	}
+
+	/* drawRect -- draw a rectangle
+	 * arguments:
+	 * x, y: the coordinates of the top left corner
+	 * dx, dy: width and height
+	 * color: the color of the border
+	 * alpha: the transparency (0 is invisible, 1 is opaque)
+	 * r: the radius of the rounded corners
+	 *
+	 */
+	function drawRect (x, y, dx, dy, color, alpha, r) {
 		ctx.save();
 		ctx.globalAlpha = alpha;
+
+		ctx.beginPath();
+
+		// see http://www.dbp-consulting.com/tutorials/canvas/CanvasArcTo.html
+		// draw top and top right corner
+		ctx.moveTo (x+r, y);
+		ctx.arcTo (x+dx, y, x+dx, y+r, r);
+
+		// draw right side and bottom right corner
+    	ctx.arcTo(x+dx,y+dy,x+dx-r,y+dy,r); 
+
+    	// draw bottom and bottom left corner
+    	ctx.arcTo(x,y+dy,x,y+dy-r,r);
+
+    	// draw left and top left corner
+    	ctx.arcTo(x,y,x+r,y,r);
+		
 		ctx.fillStyle = "#ffffff";
-		ctx.fillRect (x, y, dx, dy);
+		ctx.fill();
+
+		ctx.lineWidth = 1;
 		ctx.strokeStyle = color;
-		ctx.strokeRect (x, y, dx, dy);
+		ctx.stroke();
+
+		ctx.restore();
 	}
 
 	initApp();
