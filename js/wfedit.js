@@ -130,7 +130,7 @@ function wfeditApp () {
 		rects.forEach(function (rectItem) {
 			if (rectItem.selected) {
 				color = rectItem.highlight;
-				alpha = 0.7;
+				alpha = 0.95;
 			} else {
 				color = rectItem.color;
 			}
