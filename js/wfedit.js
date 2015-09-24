@@ -1,6 +1,8 @@
 function wfeditApp () {
 	var c = document.getElementById('wfCanvas');
 	var ctx = c.getContext('2d');
+	
+	
 
 	var rects = [];
 	var dragStart = { x: 0, y: 0 };
@@ -8,10 +10,10 @@ function wfeditApp () {
 	var Rect = function (x, y) {
 		this.x = x;
 		this.y = y;
-		this.height = 50;
-		this.width = 30;
-		this.color = "#ff00ee";
-		this.highlight = "#000000";
+		this.height = 100;
+		this.width = 100;
+		this.color = "#333333";
+		this.highlight = "#999999";
 		this.selected = false;
 		
 
@@ -82,6 +84,7 @@ function wfeditApp () {
 		// top left is hardcoded to (10,10) in index.html
 		c.height = window.innerHeight - 20;
 		c.width = window.innerWidth - 20;
+		ctx.translate(0.5, 0.5); // fix blurring
 	}
 
 	function createRect (x, y) {
@@ -116,15 +119,18 @@ function wfeditApp () {
 
 	function drawScreen () {
 		var color = "#000000";
+		var alpha = 1;
 		ctx.fillStyle = "#ffffee";
 		ctx.fillRect (0, 0, c.width, c.height);
 
+	  ctx.lineWidth = 2;
 		ctx.strokeStyle = "rgb(0, 0, 255)";
 		ctx.strokeRect (0, 0, c.width, c.height);
 
 		rects.forEach(function (rectItem) {
 			if (rectItem.selected) {
 				color = rectItem.highlight;
+				alpha = 0.7;
 			} else {
 				color = rectItem.color;
 			}
@@ -132,11 +138,13 @@ function wfeditApp () {
 				     rectItem.y - c.offsetTop,
 				     rectItem.width,
 				     rectItem.height,
-				     color);
+				     color, alpha);
 		});
 	}
 
-	function drawRect (x, y, dx, dy, color) {
+	function drawRect (x, y, dx, dy, color, alpha) {
+		ctx.save();
+		ctx.globalAlpha = alpha;
 		ctx.fillStyle = "#ffffff";
 		ctx.fillRect (x, y, dx, dy);
 		ctx.strokeStyle = color;
