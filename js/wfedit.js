@@ -14,8 +14,14 @@ function wfeditApp () {
 		this.width = 100;
 		this.color = "#333333";
 		this.highlight = "#999999";
+		// handles are visible, other widgets show state of this element
 		this.selected = false;
+
+		// there was a click on the resize handle and mouse is still down
 		this.inResize = false;
+
+		// there was a click elsewehere and mouse ist still down
+		this.inDrag = false;
 	};
 
 	Rect.prototype.contains = function (x, y) {
@@ -24,6 +30,21 @@ function wfeditApp () {
 			return true;
 		} else {
 			return false;
+		}
+	};
+
+	/* Rect.onMouseDown(x, y)
+	 *
+	 * is given the coordinates of a click
+	 * checks in which area the click has happened
+	 * sets this.inResize or this.inDrag accordingly
+	 * returns nothing
+	 */
+	Rect.prototype.onMouseDown = function (x, y) {
+		if (false) {
+			this.inResize = true;
+		} else {
+			this.inDrag = true;
 		}
 	};
 
@@ -43,12 +64,26 @@ function wfeditApp () {
 			drawScreen();
 		});
 
-		c.addEventListener('mousedown', function (e) {
+		c.addEventListener('click', function (e) {
 			var clicked = findRect (e.clientX, e.clientY);
 			if (clicked >= 0) {
-				toggleSelectRect (clicked);
+				toggleSelectRect(clicked);
 				raiseRect (clicked);
-				startDrag(e.clientX, e.clientY);
+			} else {
+				unselectAllRects();
+			}
+			drawScreen();
+		});
+
+		c.addEventListener('mousedown', function (e) {
+			var clicked = findRect (e.clientX, e.clientY);
+			if (clicked >= 0 && rects[clicked].selected) {
+				rects[clicked].onMouseDown(e.clientX, e.clientY);
+				if (rects[clicked].inDrag) {
+					startDrag(e.clientX, e.clientY);
+				} else if (rects[clicked].inResize) {
+					startResize(e.clientX, e.clientY);
+				}
 			}
 			
 			drawScreen();
@@ -56,7 +91,8 @@ function wfeditApp () {
 
 		c.addEventListener('mouseup', function () {
 			if (rects.length > 0) {
-				rects[rects.length - 1].selected = false;
+				rects[rects.length - 1].inDrag = false;
+				rects[rects.length - 1].inResize = false;
 			}
 			drawScreen();
 		});
@@ -64,7 +100,7 @@ function wfeditApp () {
 		c.addEventListener('mousemove', function (e) {
 			if (rects.length > 0) {
 				var activeRect = rects[rects.length - 1];
-				if (activeRect.selected) {
+				if (activeRect.inDrag) {
 					var dx = e.clientX - dragStart.x
 					var dy = e.clientY - dragStart.y;
 					
@@ -110,10 +146,21 @@ function wfeditApp () {
 	}
 
 	function toggleSelectRect (rectIndex) {
-		rects[rectIndex].selected = !rects[rectIndex].selected;		
+		rects[rectIndex].selected = !rects[rectIndex].selected;
+	}
+
+	function unselectAllRects (rectIndex) {
+		rects.forEach (function (rectItem) {
+			rectItem.selected = false;
+		});
 	}
 
 	function startDrag (x, y) {
+		dragStart.x = x;
+		dragStart.y = y;
+	} 
+
+	function startResize (x, y) {
 		dragStart.x = x;
 		dragStart.y = y;
 	} 
@@ -140,7 +187,7 @@ function wfeditApp () {
 				     color, alpha,
 				     radius);
 
-			if (rectItem.inResize) {
+			if (rectItem.selected) {
 				drawResizeHandle (rectItem.x - c.offsetLeft,
 				  rectItem.y - c.offsetTop,
 				  rectItem.width, rectItem.height,
@@ -197,14 +244,48 @@ function wfeditApp () {
 	}
 
 	function drawResizeHandle (x, y, dx, dy, color, alpha) {
-		ctx.save();
+		ctx.save ();
 		ctx.globalAlpha = alpha;
 		ctx.strokeStyle = color;
-		ctx.moveTo(x + dx + 4, y + dy - 12);
-		ctx.lineTo(x + dx + 4, y + dy + 4);
-		ctx.lineTo(x + dx - 12, y + dy + 4);
-		ctx.stroke();
-		ctx.restore();
+		ctx.beginPath ();
+
+		// upper left
+		ctx.moveTo (x - 4, y + 4);
+		ctx.lineTo (x - 4, y - 4);
+		ctx.lineTo (x + 4, y - 4);
+
+		// upper middle
+		ctx.moveTo (x + dx/2 - 5, y - 4);
+		ctx.lineTo (x + dx/2 + 5, y - 4);
+
+		// upper right
+		ctx.moveTo (x + dx - 4, y - 4);
+		ctx.lineTo (x + dx + 4, y - 4);
+		ctx.lineTo (x + dx + 4, y + 4);
+
+		// right middle
+		ctx.moveTo (x + dx + 4, y + dx/2 - 5);
+		ctx.lineTo (x + dx + 4, y + dx/2 + 5); 
+
+		// lower right
+		ctx.moveTo (x + dx + 4, y + dy - 4);
+		ctx.lineTo (x + dx + 4, y + dy + 4);
+		ctx.lineTo (x + dx - 4, y + dy + 4);
+
+		// lower middle
+		ctx.moveTo (x + dx/2 + 5, y + dy + 4);
+		ctx.lineTo (x + dx/2 - 5, y + dy + 4);
+
+		// lower left
+		ctx.moveTo (x + 4, y + dy + 4);
+		ctx.lineTo (x - 4, y + dy + 4);
+		ctx.lineTo (x - 4, y + dy - 4);
+
+		// left middle
+		ctx.moveTo (x - 4, y + dy/2 + 5);
+		ctx.lineTo (x - 4, y + dy/2 - 5);
+		ctx.stroke ();
+		ctx.restore ();
 	}
 
 	initApp();
