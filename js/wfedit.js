@@ -15,17 +15,18 @@ function wfeditApp () {
 		this.color = "#333333";
 		this.highlight = "#999999";
 		this.selected = false;
-		
-
-		this.contains = function (x, y) {
-			if ((this.x) <= x && (this.x + this.width) >= x &&
-				(this.y) <= y && (this.y + this.height) >= y) {
-				return true;
-			} else {
-				return false;
-			}
-		};
+		this.inResize = false;
 	};
+
+	Rect.prototype.contains = function (x, y) {
+		if ((this.x) <= x && (this.x + this.width) >= x &&
+			(this.y) <= y && (this.y + this.height) >= y) {
+			return true;
+		} else {
+			return false;
+		}
+	};
+
 	
 	function initApp () {
 		// resize and reposition canvas
@@ -48,7 +49,8 @@ function wfeditApp () {
 				toggleSelectRect (clicked);
 				raiseRect (clicked);
 				startDrag(e.clientX, e.clientY);
-			}	
+			}
+			
 			drawScreen();
 		});
 
@@ -122,7 +124,7 @@ function wfeditApp () {
 
 		var color = "#000000";
 		var alpha = 1;
-		var radius = 8;
+		var radius = 4;
 
 		rects.forEach(function (rectItem) {
 			if (rectItem.selected) {
@@ -137,12 +139,14 @@ function wfeditApp () {
 				     rectItem.height,
 				     color, alpha,
 				     radius);
+
+			if (rectItem.inResize) {
+				drawResizeHandle (rectItem.x - c.offsetLeft,
+				  rectItem.y - c.offsetTop,
+				  rectItem.width, rectItem.height,
+				  color, alpha);
+			}
 		});
-	}
-
-	function drawGrid (x, y, dx, dy, spacing) {
-		
-
 	}
 
 	function drawBackground (x, y, dx, dy) {
@@ -160,8 +164,8 @@ function wfeditApp () {
 	 * color: the color of the border
 	 * alpha: the transparency (0 is invisible, 1 is opaque)
 	 * r: the radius of the rounded corners
-	 *
 	 */
+	 
 	function drawRect (x, y, dx, dy, color, alpha, r) {
 		ctx.save();
 		ctx.globalAlpha = alpha;
@@ -185,10 +189,21 @@ function wfeditApp () {
 		ctx.fillStyle = "#ffffff";
 		ctx.fill();
 
-		ctx.lineWidth = 1;
+		ctx.lineWidth = 2;
 		ctx.strokeStyle = color;
 		ctx.stroke();
 
+		ctx.restore();
+	}
+
+	function drawResizeHandle (x, y, dx, dy, color, alpha) {
+		ctx.save();
+		ctx.globalAlpha = alpha;
+		ctx.strokeStyle = color;
+		ctx.moveTo(x + dx + 4, y + dy - 12);
+		ctx.lineTo(x + dx + 4, y + dy + 4);
+		ctx.lineTo(x + dx - 12, y + dy + 4);
+		ctx.stroke();
 		ctx.restore();
 	}
 
