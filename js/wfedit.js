@@ -1,13 +1,8 @@
-function wfeditApp () {
-	var c = document.getElementById('wfCanvas');
-	var ctx = c.getContext('2d');
-	
-	
-
-	var rects = [];
-	var dragStart = { x: 0, y: 0 };
-
-	var Rect = function (x, y) {
+$(function () {
+	var Screen = function () {
+		this.dragStart = { x: 0, y: 0 };
+	};
+		var Rect = function (x, y) {
 		this.x = x;
 		this.y = y;
 		this.height = 100;
@@ -29,6 +24,12 @@ function wfeditApp () {
 			(this.y) <= y && (this.y + this.height) >= y) {
 			return true;
 		} else {
+			if (this.selected) {
+				// check resize handlers
+				if (this.resizeHit(x, y) != -1) {
+					return true;
+				}
+			}
 			return false;
 		}
 	};
@@ -48,81 +49,102 @@ function wfeditApp () {
 		}
 	};
 
+	var model = {
+		var rects = [];
+		var screen = new Screen();
+	};
+	var controller = {
+		init: function () {};
+	};
+	var view = {
+		init: function () {
+			this.c = document.getElementById('wfCanvas');
+			this.ctx = this.c.getContext('2d');
+					// on every resize, resize canvas again
+			window.addEventListener('resize', function () {
+				this.resizeCanvas();
+				controller.drawScreen();
+			}, false);
+
+			this.c.addEventListener('dblclick', function (e) {
+				controller.createRect (e.clientX, e.clientY);
+				controller.drawScreen();
+			});
+
+			this.c.addEventListener('click', function (e) {
+				var clicked = findRect (e.clientX, e.clientY);
+				if (clicked >= 0) {
+					controller.toggleSelectRect(clicked);
+					controller.raiseRect (clicked);
+				} else {
+					controller.unselectAllRects();
+				}
+				drawScreen();
+			});
+
+			// TODO: move to controller
+			this.c.addEventListener('mousedown', function (e) {
+				var clicked = findRect (e.clientX, e.clientY);
+				if (clicked >= 0 && rects[clicked].selected) {
+					rects[clicked].onMouseDown(e.clientX, e.clientY);
+					if (rects[clicked].inDrag) {
+						startDrag(e.clientX, e.clientY);
+					} else if (rects[clicked].inResize) {
+						startResize(e.clientX, e.clientY);
+					}
+				}	
+				drawScreen();
+			});
+
+			// TODO: move to controller
+			this.c.addEventListener('mouseup', function () {
+				if (rects.length > 0) {
+					rects[rects.length - 1].inDrag = false;
+					rects[rects.length - 1].inResize = false;
+				}
+				drawScreen();
+			});
+
+			this.c.addEventListener('mousemove', function (e) {
+				if (rects.length > 0) {
+					var activeRect = rects[rects.length - 1];
+					if (activeRect.inDrag) {
+						var dx = e.clientX - dragStart.x
+						var dy = e.clientY - dragStart.y;
+					
+						activeRect.x += dx;
+						activeRect.y += dy;	
+						startDrag(e.clientX, e.clientY);					
+					
+						drawScreen();
+					}
+				}
+			});
+		},
+		resizeCanvas: function () {		
+			// top left is hardcoded to (10,10) in index.html
+			this.c.height = window.innerHeight - 200;
+			this.c.width = window.innerWidth - 200;
+			this.ctx.translate(0.5, 0.5); // fix blurring
+		},
+		drawScreen = function () {}
+	};
+} ());
+
+
+function wfeditApp () {
+
+	
+
+
 	
 	function initApp () {
 		// resize and reposition canvas
 		resizeCanvas();
 
-		// on every resize, resize canvas again
-		window.addEventListener('resize', function () {
-			resizeCanvas();
-			drawScreen();
-		}, false);
-
-		c.addEventListener('dblclick', function (e) {
-			createRect (e.clientX, e.clientY);
-			drawScreen();
-		});
-
-		c.addEventListener('click', function (e) {
-			var clicked = findRect (e.clientX, e.clientY);
-			if (clicked >= 0) {
-				toggleSelectRect(clicked);
-				raiseRect (clicked);
-			} else {
-				unselectAllRects();
-			}
-			drawScreen();
-		});
-
-		c.addEventListener('mousedown', function (e) {
-			var clicked = findRect (e.clientX, e.clientY);
-			if (clicked >= 0 && rects[clicked].selected) {
-				rects[clicked].onMouseDown(e.clientX, e.clientY);
-				if (rects[clicked].inDrag) {
-					startDrag(e.clientX, e.clientY);
-				} else if (rects[clicked].inResize) {
-					startResize(e.clientX, e.clientY);
-				}
-			}
-			
-			drawScreen();
-		});
-
-		c.addEventListener('mouseup', function () {
-			if (rects.length > 0) {
-				rects[rects.length - 1].inDrag = false;
-				rects[rects.length - 1].inResize = false;
-			}
-			drawScreen();
-		});
-
-		c.addEventListener('mousemove', function (e) {
-			if (rects.length > 0) {
-				var activeRect = rects[rects.length - 1];
-				if (activeRect.inDrag) {
-					var dx = e.clientX - dragStart.x
-					var dy = e.clientY - dragStart.y;
-					
-					activeRect.x += dx;
-					activeRect.y += dy;	
-					startDrag(e.clientX, e.clientY);					
-					
-					drawScreen();
-				}
-			}
-		});
 
 
-		drawScreen();
-	}
 
-	function resizeCanvas () {		
-		// top left is hardcoded to (10,10) in index.html
-		c.height = window.innerHeight - 200;
-		c.width = window.innerWidth - 200;
-		ctx.translate(0.5, 0.5); // fix blurring
-	}
 
 	function createRect (x, y) {
 		var rect = new Rect(x, y);
@@ -184,14 +206,14 @@ function wfeditApp () {
 				     rectItem.y - c.offsetTop,
 				     rectItem.width,
 				     rectItem.height,
-				     color, alpha,
+				     rectItem.color, alpha,
 				     radius);
 
 			if (rectItem.selected) {
 				drawResizeHandle (rectItem.x - c.offsetLeft,
 				  rectItem.y - c.offsetTop,
 				  rectItem.width, rectItem.height,
-				  color, alpha);
+				  rectItem.highlight, alpha);
 			}
 		});
 	}
